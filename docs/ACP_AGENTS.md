@@ -69,7 +69,7 @@ files don't exist, so an API key is required instead.
 
 | Provider | Subscription login (preferred) | API key (fallback) |
 |---|---|---|
-| **Claude Code** | A Claude Code login, via `CLAUDE_CONFIG_DIR` pointing at your `~/.claude` credentials | `ANTHROPIC_API_KEY` *(onboarding)* |
+| **Claude Code** | A Claude Code login, via `CLAUDE_CONFIG_DIR` pointing at your `~/.claude` credentials *(must be set on the backend — not auto-detected; see below)* | `ANTHROPIC_API_KEY` *(onboarding)* |
 | **Codex** | A ChatGPT login (`codex login`) cached at `~/.codex/auth.json` — auto-detected | `OPENAI_API_KEY` *(onboarding)* |
 | **Gemini CLI** | Your Google login (`gemini`/`gemini --acp`) cached at `~/.gemini/oauth_creds.json` — auto-detected | `GEMINI_API_KEY` *(onboarding)* |
 
