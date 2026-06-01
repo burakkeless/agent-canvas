@@ -41,9 +41,10 @@ changing a provider happens upstream in the SDK, not here.
 |---|---|---|
 | **Claude Code** | `npx -y @agentclientprotocol/claude-agent-acp` | API key + optional base URL |
 | **Codex** | `npx -y @zed-industries/codex-acp` | API key + optional base URL |
-| **Gemini CLI** | `npx -y @google/gemini-cli --acp` | *nothing* — uses your local Google login |
+| **Gemini CLI** | `npx -y @google/gemini-cli --acp` | API key + optional base URL |
 
-See [Authentication](#authentication) for how each provider authenticates.
+All three collect the same optional credentials in onboarding. See
+[Authentication](#authentication) for how each one actually authenticates.
 
 > [!NOTE]
 > Use the wrappers above, not the vendor CLIs directly. For example
@@ -70,19 +71,21 @@ files don't exist, so an API key is required instead.
 |---|---|---|
 | **Claude Code** | A Claude Code login, via `CLAUDE_CONFIG_DIR` pointing at your `~/.claude` credentials | `ANTHROPIC_API_KEY` *(onboarding)* |
 | **Codex** | A ChatGPT login (`codex login`) cached at `~/.codex/auth.json` — auto-detected | `OPENAI_API_KEY` *(onboarding)* |
-| **Gemini CLI** | Your Google login (`gemini`/`gemini --acp`) cached at `~/.gemini/oauth_creds.json` — auto-detected | `GEMINI_API_KEY` *(not prompted; see below)* |
+| **Gemini CLI** | Your Google login (`gemini`/`gemini --acp`) cached at `~/.gemini/oauth_creds.json` — auto-detected | `GEMINI_API_KEY` *(onboarding)* |
 
-- **Gemini CLI** is the clearest case: Canvas never asks for a key, and if you've
-  signed into Gemini on the machine, it **just works** — the agent picks up
-  `~/.gemini/oauth_creds.json` automatically. (A `GEMINI_API_KEY` secret is still
-  honored as a fallback if no login is present, but onboarding doesn't collect
-  one.)
-- **Codex** prefers `~/.codex/auth.json` (your ChatGPT login) when present and
-  falls back to the `OPENAI_API_KEY` you enter in onboarding.
-- **Claude Code** reads `ANTHROPIC_API_KEY` from the environment (the onboarding
-  field). To use a subscription login instead, set `CLAUDE_CONFIG_DIR` on the
-  backend; when it's set, any `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` is
-  stripped so it can't silently override the login.
+All three collect an *optional* API key (+ base URL) in onboarding — leave them
+blank to rely on a subscription login. A few provider-specific notes:
+
+- **Codex and Gemini CLI** auto-detect their cached login file (above) and prefer
+  it over a key. Gemini's free Google login is the common no-key path locally:
+  sign in once and it **just works**, no key required.
+- **Claude Code** is the exception to auto-detection — it reads `ANTHROPIC_API_KEY`
+  from the environment. To use a subscription login instead, set
+  `CLAUDE_CONFIG_DIR` on the backend; when set, a conflicting `ANTHROPIC_API_KEY` /
+  `ANTHROPIC_BASE_URL` is stripped so it can't silently override the login.
+- **Gemini base URL caveat:** `GEMINI_BASE_URL` only takes effect on the API-key
+  path (it's passed as the ACP gateway endpoint); under the Google login it's
+  ignored.
 
 ## Onboarding an ACP agent
 
@@ -92,9 +95,8 @@ First-time users get a four-step onboarding modal. To onboard an ACP agent:
    OpenHands. The choice is saved immediately to your backend's settings.
 2. **Check backend** — confirms Agent Canvas can reach the Agent Server.
 3. **Set up credentials** — enter the provider's API key (and, optionally, a
-   custom base URL for a proxy or gateway). This step is **skipped for Gemini
-   CLI**, which authenticates through an interactive OAuth login rather than a
-   static key.
+   custom base URL for a proxy or gateway). All three providers — Claude Code,
+   Codex, and Gemini CLI — collect these here, and every field is optional.
 4. **Say hello** — creates your first conversation and closes the modal.
 
 > [!NOTE]
