@@ -37,17 +37,52 @@ The provider list is sourced from the SDK registry
 [`src/constants/acp-providers.ts`](../src/constants/acp-providers.ts). Adding or
 changing a provider happens upstream in the SDK, not here.
 
-| Provider | Default command | Auth | Credentials step |
-|---|---|---|---|
-| **Claude Code** | `npx -y @agentclientprotocol/claude-agent-acp` | `ANTHROPIC_API_KEY`, or a Claude subscription login | API key + optional base URL |
-| **Codex** | `npx -y @zed-industries/codex-acp` | `OPENAI_API_KEY`, or a ChatGPT login | API key + optional base URL |
-| **Gemini CLI** | `npx -y @google/gemini-cli --acp` | Interactive Google OAuth login | *skipped* — no static key |
+| Provider | Default command | Onboarding asks for |
+|---|---|---|
+| **Claude Code** | `npx -y @agentclientprotocol/claude-agent-acp` | API key + optional base URL |
+| **Codex** | `npx -y @zed-industries/codex-acp` | API key + optional base URL |
+| **Gemini CLI** | `npx -y @google/gemini-cli --acp` | *nothing* — uses your local Google login |
+
+See [Authentication](#authentication) for how each provider authenticates.
 
 > [!NOTE]
 > Use the wrappers above, not the vendor CLIs directly. For example
 > `npx -y @openai/codex acp` looks plausible but is **not** an ACP server — it
 > has no `acp` subcommand and silently deadlocks the handshake. Use
 > `@zed-industries/codex-acp` instead.
+
+## Authentication
+
+> [!IMPORTANT]
+> ACP agents authenticate **two ways: a subscription login, or an API key.** When
+> both are available the **subscription login wins** — the API key is only a
+> fallback. This matters most when running locally: if you're already logged into
+> a provider's CLI on your machine, the agent reuses that login automatically and
+> you may not need a key at all.
+
+A "subscription login" means the provider's own CLI has cached a credential file
+in your home directory (from logging in once). When the Agent Server runs **on
+that same machine** — i.e. a local or self-hosted backend — it detects the file
+and authenticates with it, no API key required. On a clean cloud sandbox those
+files don't exist, so an API key is required instead.
+
+| Provider | Subscription login (preferred) | API key (fallback) |
+|---|---|---|
+| **Claude Code** | A Claude Code login, via `CLAUDE_CONFIG_DIR` pointing at your `~/.claude` credentials | `ANTHROPIC_API_KEY` *(onboarding)* |
+| **Codex** | A ChatGPT login (`codex login`) cached at `~/.codex/auth.json` — auto-detected | `OPENAI_API_KEY` *(onboarding)* |
+| **Gemini CLI** | Your Google login (`gemini`/`gemini --acp`) cached at `~/.gemini/oauth_creds.json` — auto-detected | `GEMINI_API_KEY` *(not prompted; see below)* |
+
+- **Gemini CLI** is the clearest case: Canvas never asks for a key, and if you've
+  signed into Gemini on the machine, it **just works** — the agent picks up
+  `~/.gemini/oauth_creds.json` automatically. (A `GEMINI_API_KEY` secret is still
+  honored as a fallback if no login is present, but onboarding doesn't collect
+  one.)
+- **Codex** prefers `~/.codex/auth.json` (your ChatGPT login) when present and
+  falls back to the `OPENAI_API_KEY` you enter in onboarding.
+- **Claude Code** reads `ANTHROPIC_API_KEY` from the environment (the onboarding
+  field). To use a subscription login instead, set `CLAUDE_CONFIG_DIR` on the
+  backend; when it's set, any `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` is
+  stripped so it can't silently override the login.
 
 ## Onboarding an ACP agent
 
@@ -77,13 +112,9 @@ the secret name equal to the env var is what makes a saved key actually reach th
 provider CLI.
 
 Secret names must match `^[a-zA-Z][a-zA-Z0-9_]{0,63}$`. API keys are stored
-masked; base-URL overrides are plain text.
-
-> [!NOTE]
-> A subscription / OAuth login takes precedence over an API key. For Claude Code,
-> if the backend is configured for a Claude login (`CLAUDE_CONFIG_DIR`), a
-> conflicting `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` is stripped so it can't
-> silently break the login.
+masked; base-URL overrides are plain text. Remember that a key is only a
+fallback — see [Authentication](#authentication) — so you can leave these blank
+when a subscription login already covers the provider.
 
 ## Switching agent or model later
 
@@ -116,9 +147,11 @@ env vars the server reads as global secrets under **Settings → Secrets**.
 - **Agent never responds / conversation hangs on start** — the command is likely
   not a real ACP server (see the note above). Verify the package and that it
   speaks ACP over stdio.
-- **Auth errors** — confirm the secret name matches the provider's env var
-  exactly (e.g. `ANTHROPIC_API_KEY`) and that it's set on the backend you're
-  connected to. Secrets are per backend.
+- **Auth errors** — confirm either a subscription login or an API key is
+  available on the backend you're connected to (see [Authentication](#authentication)).
+  For API keys, the secret name must match the provider's env var exactly (e.g.
+  `ANTHROPIC_API_KEY`); secrets are per backend. A login only auto-applies when
+  the Agent Server runs on the machine you logged in on.
 - **Model not found** — the provider may not offer that model for your account;
   pick a suggested model or correct the custom override.
 - **Wrong agent after switching backends** — the agent choice is stored per
