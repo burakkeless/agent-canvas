@@ -79,6 +79,17 @@ describe("SetupAcpSecretsStep", () => {
     ).toHaveAttribute("type", "text");
   });
 
+  it("renders GEMINI_API_KEY and GEMINI_BASE_URL for Gemini CLI", () => {
+    renderStep("gemini-cli");
+
+    expect(
+      screen.getByTestId("onboarding-acp-secret-GEMINI_API_KEY"),
+    ).toHaveAttribute("type", "password");
+    expect(
+      screen.getByTestId("onboarding-acp-secret-GEMINI_BASE_URL"),
+    ).toHaveAttribute("type", "text");
+  });
+
   it("flags a credential that already exists as a saved secret", async () => {
     const { apiKey } = await renderWithSavedApiKey();
 

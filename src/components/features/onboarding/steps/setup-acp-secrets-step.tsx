@@ -22,26 +22,27 @@ interface SetupAcpSecretsStepProps {
   /** ACP provider whose credentials we're collecting (e.g. ``"claude-code"``).
    * Typed as {@link OnboardingAgentId} — the same type the onboarding modal
    * tracks — so a mistyped key is a compile error rather than a silently empty
-   * form. Providers without a credentials entry (``"openhands"``,
-   * ``"gemini-cli"``) simply yield no fields. */
+   * form. Providers without a credentials entry (``"openhands"``) simply yield
+   * no fields. */
   providerKey: OnboardingAgentId;
   onBack: () => void;
   onNext: () => void;
 }
 
 /**
- * Onboarding credentials step for ACP providers that authenticate via an
- * env-var API key (Claude Code, Codex). The fields are derived from
+ * Onboarding credentials step for ACP providers that expose an env-var API key
+ * (Claude Code, Codex, Gemini CLI). The fields are derived from
  * {@link getAcpProviderSecrets}; each one maps 1:1 to a **global secret**
  * whose name equals the env var the agent-server exports into the provider
  * subprocess. Saving here is therefore the same as adding the secret under
  * Settings → Secrets — it shows up there afterwards.
  *
- * The step is intentionally skippable: a user may authenticate Claude Code via
- * a subscription login, or already have the env var set on the backend, so we
- * never block "Next" on a value. Empty fields are simply not written; a field
- * whose secret already exists shows an "already saved" placeholder and is left
- * untouched unless the user types a replacement.
+ * The step is intentionally skippable: a user may authenticate via a
+ * subscription / OAuth login (e.g. a Claude login, or Gemini's Google login),
+ * or already have the env var set on the backend, so we never block "Next" on a
+ * value. Empty fields are simply not written; a field whose secret already
+ * exists shows an "already saved" placeholder and is left untouched unless the
+ * user types a replacement.
  */
 export function SetupAcpSecretsStep({
   providerKey,

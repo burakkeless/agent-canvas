@@ -90,21 +90,22 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
 
   // Slide index 2 is the "provider credentials" slot. Its content depends on
   // the chosen agent:
-  //   * OpenHands           → the LLM-setup form (its own LLM config).
-  //   * Claude Code / Codex → the ACP secrets form (API key + base URL), since
-  //                           these providers authenticate via env-var keys.
-  //   * Gemini CLI          → nothing: it authenticates through an interactive
-  //                           OAuth login, so there's no key to enter and we
-  //                           skip the slide entirely.
-  // ``getAcpProviderSecrets`` returns the field list (empty for Gemini), which
-  // is what distinguishes the ACP-with-secrets case from the skip case.
+  //   * OpenHands               → the LLM-setup form (its own LLM config).
+  //   * Claude Code/Codex/Gemini → the ACP secrets form (API key + base URL):
+  //                                all three built-in providers expose an
+  //                                env-var key. The fields are optional, so a
+  //                                user on a subscription / OAuth login just
+  //                                leaves them blank.
+  // ``getAcpProviderSecrets`` returns the field list, which is what
+  // distinguishes the ACP-with-secrets case from the skip case below.
   const isOpenHands = selectedAgentId === "openhands";
   const acpSecretFields = getAcpProviderSecrets(selectedAgentId);
   const showAcpSecretsStep = !isOpenHands && acpSecretFields.length > 0;
-  // Skip slide 2 only when there's nothing to show there (an ACP provider
-  // with no credentials to collect). Skipping keeps the rest of the flow
-  // intact in both directions (back from SayHello returns to CheckBackend,
-  // not a dead-end blank page).
+  // Skip slide 2 only when there's nothing to show there (an ACP provider with
+  // no credentials to collect). No built-in provider hits this today — all
+  // three collect a key — but the path is kept generic for any future
+  // OAuth-only provider, and keeps the flow intact in both directions (back
+  // from SayHello returns to CheckBackend, not a dead-end blank page).
   const skipStep2 = !isOpenHands && !showAcpSecretsStep;
   const goNext = React.useCallback(
     () =>

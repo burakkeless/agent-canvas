@@ -191,13 +191,16 @@ export interface ACPProviderSecretField {
 }
 
 // Credentials Canvas prompts for during onboarding, keyed by ACP registry key.
-// Only providers that authenticate through an env-var API key appear here:
-// Claude Code (Anthropic) and Codex (OpenAI). Gemini CLI authenticates via an
-// interactive OAuth login rather than a static key, so it has no entry and its
-// onboarding credentials step is skipped. Every field is optional (the step is
-// skippable): the API keys render masked, the base-URL entries are plain-text
-// overrides for proxies/gateways. A provider with no entry simply shows no
-// credentials step.
+// All three built-in providers expose an env-var API key (+ optional base URL):
+// Claude Code (Anthropic), Codex (OpenAI), and Gemini CLI (Google). Every field
+// is optional (the step is skippable): the API keys render masked, the base-URL
+// entries are plain-text overrides for proxies/gateways. A subscription / OAuth
+// login takes precedence over the key when present — most relevant for Gemini,
+// whose Google login is the common local path — so leaving the fields blank is
+// fully supported. NB: Gemini's GEMINI_BASE_URL only routes when authenticating
+// with the API key (it rides the ACP ``gateway`` param), not under OAuth. A
+// provider with no entry here (e.g. the ``"custom"`` preset, or a future
+// OAuth-only provider) simply shows no credentials step.
 const ACP_PROVIDER_SECRETS: Record<string, ACPProviderSecretField[]> = {
   "claude-code": [
     {
@@ -221,13 +224,24 @@ const ACP_PROVIDER_SECRETS: Record<string, ACPProviderSecretField[]> = {
       hint_key: I18nKey.ONBOARDING$ACP_SECRET_BASE_URL_HINT,
     },
   ],
+  "gemini-cli": [
+    {
+      name: "GEMINI_API_KEY",
+      secret: true,
+      hint_key: I18nKey.ONBOARDING$ACP_SECRET_API_KEY_HINT,
+    },
+    {
+      name: "GEMINI_BASE_URL",
+      hint_key: I18nKey.ONBOARDING$ACP_SECRET_BASE_URL_HINT,
+    },
+  ],
 };
 
 /**
  * List the credentials Canvas should prompt for when onboarding the given ACP
- * provider. Returns ``[]`` for OpenHands, the ``"custom"`` preset, providers
- * that don't use a static API key (Gemini CLI), and any unknown key — callers
- * treat an empty list as "no credentials step for this provider".
+ * provider. Returns ``[]`` for OpenHands, the ``"custom"`` preset, and any
+ * unknown key — callers treat an empty list as "no credentials step for this
+ * provider".
  */
 export function getAcpProviderSecrets(
   key: string | null | undefined,
